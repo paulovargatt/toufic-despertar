@@ -1,0 +1,27 @@
+{
+  "name": "despertar-toufic",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Landing page de vendas — Despertar da Autoconfiança",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:cf": "vite build && node scripts/prerender-home.js"
+  },
+  "dependencies": {
+    "hls.js": "^1.6.15",
+    "lucide-react": "^1.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "puppeteer": "^24.40.0",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.7"
+  }
+}
