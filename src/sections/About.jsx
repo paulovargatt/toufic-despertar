@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { ArrowUpRight } from 'lucide-react'
 import { Eyebrow, Body } from '../components/Primitives'
 import expert from '../assets/expert2.webp'
 
@@ -18,6 +19,86 @@ import expert from '../assets/expert2.webp'
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
 const smooth = (t) => t * t * (3 - 2 * t)
+
+/* Glifos de marca — o Lucide 1.x não inclui ícones de redes sociais (removidos por
+   marca registrada), então desenhamos inline no mesmo traço (stroke) do Lucide. */
+function InstagramGlyph({ className = '' }) {
+  return (
+    <svg
+      viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden
+    >
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  )
+}
+
+function YoutubeGlyph({ className = '' }) {
+  return (
+    <svg
+      viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden
+    >
+      <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+      <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+/* Chip de rede social — o número (a prova) é o herói; a cor da marca acende no hover. */
+function SocialLink({ href, glyph, count, label, iconHover }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 transition-colors hover:border-white/20 hover:bg-white/[0.06]"
+    >
+      <span className={`shrink-0 text-soft/70 transition-colors ${iconHover}`}>{glyph}</span>
+      <span className="leading-tight">
+        <span className="block text-sm font-bold text-white">{count}</span>
+        <span className="block text-[0.7rem] text-soft/55">{label}</span>
+      </span>
+      <ArrowUpRight
+        className="ml-1 h-3.5 w-3.5 shrink-0 text-soft/25 transition-colors group-hover:text-soft/55"
+        aria-hidden
+      />
+    </a>
+  )
+}
+
+/* Prova social — onde acompanhar o Toufic (autoridade que ancora o "quem te guia"). */
+function SocialProof() {
+  return (
+    <div className="mt-6 border-t border-white/10 pt-5 sm:mt-7 sm:pt-6">
+      <p className="mb-3.5 flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-soft/45">
+        <span
+          className="inline-block h-1.5 w-1.5 rounded-full bg-cyan shadow-[0_0_8px_rgba(34,211,238,0.7)]"
+          aria-hidden
+        />
+        +375 mil pessoas já acompanham
+      </p>
+      <div className="flex flex-wrap gap-2.5">
+        <SocialLink
+          href="https://www.instagram.com/otoufics/"
+          glyph={<InstagramGlyph className="h-5 w-5" />}
+          count="+300 mil"
+          label="no Instagram"
+          iconHover="group-hover:text-[#e1306c]"
+        />
+        <SocialLink
+          href="https://www.youtube.com/@touficp333"
+          glyph={<YoutubeGlyph className="h-5 w-5" />}
+          count="+76 mil"
+          label="no YouTube"
+          iconHover="group-hover:text-[#ff0000]"
+        />
+      </div>
+    </div>
+  )
+}
 
 /* Cópia da bio — reutilizada no mobile e no desktop (forçada visível: o painel
    sobe escondido e o conteúdo precisa já estar pintado). */
@@ -52,6 +133,8 @@ function BioCopy() {
         ativar uma confiança <strong className="text-white">natural, firme e magnética</strong> — sem
         virar um personagem que não é você.
       </Body>
+
+      <SocialProof />
     </>
   )
 }

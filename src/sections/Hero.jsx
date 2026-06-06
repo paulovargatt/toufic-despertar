@@ -1,6 +1,8 @@
 import { Container, Cta } from '../components/Primitives'
-import HLSPlayer from '../components/HLSPlayer'
-import { Suspense, useState, useEffect, useRef } from 'react'
+import { lazy, Suspense, useState, useEffect, useRef } from 'react'
+
+// Code-split: o player + hls.js saem do bundle principal e só carregam quando o Hero monta
+const HLSPlayer = lazy(() => import('../components/HLSPlayer'))
 
 /* ════════════════════════════════════════════════════════════════════════════
    Sequência cinematográfica de load

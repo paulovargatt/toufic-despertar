@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://despertar.toufic.com.br/sitemap.xml

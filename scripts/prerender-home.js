@@ -17,20 +17,6 @@ async function fileExists(p) {
   }
 }
 
-async function copyForAppRoute() {
-  const indexPath = path.join(DIST_DIR, 'index.html');
-  const appDir = path.join(DIST_DIR, 'app');
-  const appIndex = path.join(appDir, 'index.html');
-  if (!(await fileExists(indexPath))) {
-    throw new Error('dist/index.html not found. Run "vite build" first.');
-  }
-  await fs.mkdir(appDir, { recursive: true });
-  const html = await fs.readFile(indexPath, 'utf8');
-  // Write a generic SPA index for /app (no prerendered head from landing)
-  await fs.writeFile(appIndex, html, 'utf8');
-  console.log('[prerender] Copied base index.html to /app/index.html');
-}
-
 function waitForServer(url, timeoutMs = 15000) {
   const start = Date.now();
   return new Promise((resolve, reject) => {
@@ -116,7 +102,9 @@ async function prerenderRoute(routePath) {
 }
 
 async function main() {
-  await copyForAppRoute();
+  if (!(await fileExists(path.join(DIST_DIR, 'index.html')))) {
+    throw new Error('dist/index.html not found. Run "vite build" first.');
+  }
   const server = await startStaticServer();
   try {
     for (const routePath of PRERENDER_ROUTES) {

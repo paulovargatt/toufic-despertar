@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import Hls from 'hls.js'
 import { Play, Pause } from 'lucide-react'
 
 export default function HLSPlayer({ 
@@ -275,6 +274,10 @@ export default function HLSPlayer({
 
     const initializePlayer = async () => {
       try {
+        // hls.js é carregado sob demanda (chunk separado) — nunca entra no bundle inicial
+        const { default: Hls } = await import('hls.js')
+        if (!isMounted) return
+
         if (Hls.isSupported()) {
           hlsInstance = new Hls({
             enableWorker: false,
