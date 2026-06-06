@@ -48,7 +48,7 @@ export default function Features() {
               key={title}
               className="glass glass-hover reveal group rounded-lg p-8 hover:-translate-y-1"
             >
-              <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-electric/20 bg-electric/5 text-electric transition-colors group-hover:bg-electric/15">
+              <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-cyan/25 bg-cyan/[0.06] text-cyan transition-colors group-hover:bg-cyan/15">
                 <Icon className="h-6 w-6" />
               </span>
               <h3 className="mb-2 text-lg font-semibold">{title}</h3>

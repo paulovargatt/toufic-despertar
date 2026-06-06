@@ -36,7 +36,7 @@ export default function StickyCta() {
     >
       <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-3">
         <div className="leading-tight">
-          <span className="block font-display text-xl font-bold text-white">R$ 47</span>
+          <span className="block font-display text-xl font-bold text-amber-grad">R$ 47</span>
           <span className="text-xs text-soft/60">acesso hoje · garantia 7 dias</span>
         </div>
         <a

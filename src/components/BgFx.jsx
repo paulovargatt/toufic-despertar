@@ -1,689 +1,440 @@
 // src/components/BgFx.jsx
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Brain blueprint (side-profile silhouette, normalized −1..1) ────────────────
 const BRAIN_BLUEPRINT = [
-  // Cerebrum Outer Contour
-  { rx: -0.85, ry: -0.15, group: 'outer' },
-  { rx: -0.80, ry: -0.38, group: 'outer' },
-  { rx: -0.65, ry: -0.62, group: 'outer' },
-  { rx: -0.45, ry: -0.80, group: 'outer' },
-  { rx: -0.18, ry: -0.90, group: 'outer' },
-  { rx:  0.10, ry: -0.90, group: 'outer' },
-  { rx:  0.38, ry: -0.80, group: 'outer' },
-  { rx:  0.60, ry: -0.65, group: 'outer' },
-  { rx:  0.78, ry: -0.45, group: 'outer' },
-  { rx:  0.85, ry: -0.20, group: 'outer' },
-  { rx:  0.88, ry:  0.05, group: 'outer' },
-  { rx:  0.80, ry:  0.28, group: 'outer' },
-  { rx:  0.62, ry:  0.42, group: 'outer' },
-  // Temporal Lobe
-  { rx: -0.52, ry:  0.32, group: 'temporal' },
-  { rx: -0.72, ry:  0.12, group: 'temporal' },
-  { rx: -0.82, ry:  0.08, group: 'temporal' },
+  // Cerebrum outer contour
+  { rx: -0.85, ry: -0.15 }, { rx: -0.80, ry: -0.38 }, { rx: -0.65, ry: -0.62 },
+  { rx: -0.45, ry: -0.80 }, { rx: -0.18, ry: -0.90 }, { rx:  0.10, ry: -0.90 },
+  { rx:  0.38, ry: -0.80 }, { rx:  0.60, ry: -0.65 }, { rx:  0.78, ry: -0.45 },
+  { rx:  0.85, ry: -0.20 }, { rx:  0.88, ry:  0.05 }, { rx:  0.80, ry:  0.28 },
+  { rx:  0.62, ry:  0.42 },
+  // Temporal lobe
+  { rx: -0.52, ry:  0.32 }, { rx: -0.72, ry:  0.12 }, { rx: -0.82, ry:  0.08 },
   // Cerebellum
-  { rx:  0.35, ry:  0.58, group: 'cerebellum' },
-  { rx:  0.52, ry:  0.66, group: 'cerebellum' },
-  { rx:  0.68, ry:  0.58, group: 'cerebellum' },
-  { rx:  0.74, ry:  0.42, group: 'cerebellum' },
-  // Brain Stem
-  { rx:  0.05, ry:  0.52, group: 'stem' },
-  { rx:  0.00, ry:  0.78, group: 'stem' },
-  { rx: -0.05, ry:  0.95, group: 'stem' },
-  // Deep Structures
-  { rx: -0.45, ry: -0.15, group: 'deep' },
-  { rx: -0.20, ry: -0.45, group: 'deep' },
-  { rx:  0.15, ry: -0.45, group: 'deep' },
-  { rx:  0.48, ry: -0.25, group: 'deep' },
-  { rx: -0.35, ry:  0.08, group: 'deep' },
-  { rx:  0.00, ry: -0.10, group: 'deep' },
-  { rx:  0.32, ry:  0.02, group: 'deep' },
-  { rx:  0.50, ry:  0.18, group: 'deep' },
-  { rx: -0.12, ry:  0.28, group: 'deep' },
-  { rx:  0.18, ry:  0.32, group: 'deep' },
+  { rx:  0.35, ry:  0.58 }, { rx:  0.52, ry:  0.66 }, { rx:  0.68, ry:  0.58 },
+  { rx:  0.74, ry:  0.42 },
+  // Brain stem
+  { rx:  0.05, ry:  0.52 }, { rx:  0.00, ry:  0.78 }, { rx: -0.05, ry:  0.95 },
+  // Deep structures (firing core)
+  { rx: -0.45, ry: -0.15 }, { rx: -0.20, ry: -0.45 }, { rx:  0.15, ry: -0.45 },
+  { rx:  0.48, ry: -0.25 }, { rx: -0.35, ry:  0.08 }, { rx:  0.00, ry: -0.10 },
+  { rx:  0.32, ry:  0.02 }, { rx:  0.50, ry:  0.18 }, { rx: -0.12, ry:  0.28 },
+  { rx:  0.18, ry:  0.32 }, { rx: -0.25, ry: -0.02 }, { rx:  0.22, ry: -0.18 },
+  { rx:  0.06, ry:  0.16 },
 ]
 
-const GROUP_COLORS = {
-  outer:      { h: 263, s: 75, l: 70 },
-  temporal:   { h: 280, s: 80, l: 75 },
-  cerebellum: { h: 245, s: 70, l: 72 },
-  stem:       { h: 300, s: 60, l: 68 },
-  deep:       { h: 270, s: 85, l: 78 },
-}
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
+const easeOutCubic = t => 1 - Math.pow(1 - t, 3)
 
-// Easing functions
-const easeOutCubic   = t => 1 - Math.pow(1 - t, 3)
-const easeInOutQuart = t => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2
-const easeOutElastic = t => {
-  if (t === 0 || t === 1) return t
-  return Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1
-}
-
-// ─── Utility ──────────────────────────────────────────────────────────────────
-const getBezierPoint = (p0, ctrl, p2, t) => {
-  const u = 1 - t
-  return {
-    x: u * u * p0.x + 2 * u * t * ctrl.x + t * t * p2.x,
-    y: u * u * p0.y + 2 * u * t * ctrl.y + t * t * p2.y,
-  }
-}
-
-const lerp = (a, b, t) => a + (b - a) * t
-
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ──────────────────────────────────────────────────────────────────
 export default function BgFx() {
-  const canvasRef   = useRef(null)
-  const stateRef    = useRef({})   // mutable canvas state (avoids closure issues)
-  const [scrollY, setScrollY] = useState(0)
+  const canvasRef = useRef(null)
+  const wrapRef   = useRef(null)
 
-  // ── Scroll tracking ──
-  useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  // ── Canvas engine ──
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    const wrap   = wrapRef.current
+    if (!canvas || !wrap) return
     const ctx = canvas.getContext('2d', { alpha: true })
     if (!ctx) return
 
-    const dpr    = Math.min(window.devicePixelRatio || 1, 2)
-    const S      = stateRef.current
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
-    // Mutable state bucket
-    Object.assign(S, {
-      nodes:          [],
-      edges:          [],
-      adj:            [],
-      pulses:         [],
-      particles:      [],
-      mouse:          { x: null, y: null, active: false },
-      width:          0,
-      height:         0,
-      animId:         null,
-      // ── Logo intro animation ──
-      introPhase:     'idle',   // 'idle' | 'nodes' | 'edges' | 'pulses' | 'done'
-      introStart:     0,
-      introNodeReveal: 0,       // 0→1 nodes appear
-      introEdgeReveal: 0,       // 0→1 edges draw-on
-      introPulseAlpha: 0,       // 0→1 pulses fade-in
-      breathScale:    1,        // gentle breathing 0.98→1.02
-      // Hovered node
-      hoveredNode:    -1,
-    })
-
-    // ── Particle System (background) ──────────────────────────────────────────
-    class Particle {
-      constructor(w, h) { this.reset(w, h, true) }
-
-      reset(w, h, initial = false) {
-        this.x   = Math.random() * w
-        this.y   = initial ? Math.random() * h : h + 10
-        this.vx  = (Math.random() - 0.5) * 0.18
-        this.vy  = -(0.08 + Math.random() * 0.22)
-        this.r   = 0.6 + Math.random() * 1.4
-        this.alpha = 0.04 + Math.random() * 0.12
-        this.life  = 0
-        this.maxLife = 220 + Math.random() * 300
-      }
-
-      update(w, h) {
-        this.x   += this.vx
-        this.y   += this.vy
-        this.life += 1
-        if (this.life > this.maxLife || this.y < -10) this.reset(w, h)
-      }
-
-      draw(ctx) {
-        const progress = this.life / this.maxLife
-        const fade     = progress < 0.15
-          ? progress / 0.15
-          : progress > 0.75
-            ? 1 - (progress - 0.75) / 0.25
-            : 1
-        ctx.globalAlpha = this.alpha * fade
-        ctx.fillStyle   = `hsl(263, 70%, ${68 + this.r * 4}%)`
-        ctx.beginPath()
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.globalAlpha = 1
-      }
+    // Mutable state bucket (kept off React to avoid re-renders)
+    const S = {
+      nodes: [], edges: [], adj: [], signals: [],
+      W: 0, H: 0, isMobile: false,
+      clock: 0, intro: 0,
+      ignited: false, introGlow: 0,         // revela suavemente 0→1 quando o boot termina
+      viewX: 0, viewY: 0,                 // parallax offset eased toward cursor
+      mouse: { x: 0, y: 0, active: false },
+      fireTimer: 0.6,
     }
 
-    // ── Pulse class ──────────────────────────────────────────────────────────
-    class Pulse {
-      constructor(edgeIndex, reverse = false, speed = null) {
-        this.edgeIndex = edgeIndex
-        this.reverse   = reverse
-        this.progress  = 0
-        this.speed     = speed || (0.003 + Math.random() * 0.003)
-        this.id        = Math.random()
-      }
-
-      update() {
-        this.progress += this.speed
-        return this.progress >= 1
-      }
+    // ── Pre-rendered glow sprites (built once, blitted per frame) ───────────────
+    // Drawing a cached sprite with drawImage is far cheaper than allocating a
+    // radial gradient every frame — this is the core of the optimization.
+    const makeSprite = (stops) => {
+      const size = 128
+      const c = document.createElement('canvas')
+      c.width = c.height = size
+      const g = c.getContext('2d')
+      const grd = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+      stops.forEach(([o, col]) => grd.addColorStop(o, col))
+      g.fillStyle = grd
+      g.fillRect(0, 0, size, size)
+      return c
+    }
+    const haloSprite = makeSprite([
+      [0,    'rgba(150,116,255,0.55)'],
+      [0.35, 'rgba(124,90,245,0.26)'],
+      [1,    'rgba(124,90,245,0)'],
+    ])
+    const coreSprite = makeSprite([
+      [0,    'rgba(255,255,255,1)'],
+      [0.2,  'rgba(224,212,255,0.95)'],
+      [0.5,  'rgba(150,116,255,0.5)'],
+      [1,    'rgba(124,90,245,0)'],
+    ])
+    // Sinais coloridos — ciano (o novo comando) e âmbar (energia/ação)
+    const coreSpriteCyan = makeSprite([
+      [0,    'rgba(255,255,255,1)'],
+      [0.22, 'rgba(190,246,255,0.95)'],
+      [0.5,  'rgba(34,211,238,0.55)'],
+      [1,    'rgba(34,211,238,0)'],
+    ])
+    const coreSpriteAmber = makeSprite([
+      [0,    'rgba(255,255,255,1)'],
+      [0.22, 'rgba(255,224,178,0.95)'],
+      [0.5,  'rgba(255,138,31,0.6)'],
+      [1,    'rgba(255,138,31,0)'],
+    ])
+    const spriteFor = (c) =>
+      c === 'cyan' ? coreSpriteCyan : c === 'amber' ? coreSpriteAmber : coreSprite
+    const pickSignalColor = () => {
+      const r = Math.random()
+      return r < 0.3 ? 'cyan' : r < 0.45 ? 'amber' : 'core'
+    }
+    const blit = (sprite, x, y, r, a) => {
+      if (a <= 0.002 || r <= 0.2) return
+      ctx.globalAlpha = a > 1 ? 1 : a
+      ctx.drawImage(sprite, x - r, y - r, r * 2, r * 2)
     }
 
-    // ── Network init ─────────────────────────────────────────────────────────
-    const initNetwork = (w, h) => {
-      const isMobile = w < 768
-      const R        = Math.min(w, h) * (isMobile ? 0.17 : 0.23)
-      const cx       = w * 0.5
-      const cy       = isMobile ? h * 0.13 : h * 0.15
+    // ── Build the neural network ────────────────────────────────────────────────
+    const initNetwork = () => {
+      const { W, H } = S
+      S.isMobile = W < 768
+      const R  = Math.min(W, H) * (S.isMobile ? 0.18 : 0.24)
+      const cx = W * 0.5
+      const cy = S.isMobile ? H * 0.14 : H * 0.16
 
-      S.nodes = BRAIN_BLUEPRINT.map((pt, i) => {
+      S.nodes = BRAIN_BLUEPRINT.map(pt => {
         const bx = cx + pt.rx * R
         const by = cy + pt.ry * R
-        const col = GROUP_COLORS[pt.group]
         return {
-          baseX:   bx,
-          baseY:   by,
-          x:       bx,
-          y:       by,
-          phaseX:  Math.random() * Math.PI * 2,
-          phaseY:  Math.random() * Math.PI * 2,
-          speedX:  0.00035 + Math.random() * 0.0003,
-          speedY:  0.00035 + Math.random() * 0.0003,
-          radius:  1.1 + Math.random() * 0.9,
-          pulseVal: 0,
-          group:   pt.group,
-          // Color per group
-          hue:     col.h + (Math.random() - 0.5) * 12,
-          sat:     col.s,
-          lit:     col.l,
-          // Intro reveal timing — staggered by distance from center
-          revealDelay: Math.hypot(pt.rx, pt.ry) * 0.5 + Math.random() * 0.15,
+          bx, by, x: bx, y: by,
+          phx: Math.random() * Math.PI * 2, phy: Math.random() * Math.PI * 2,
+          spx: 0.5 + Math.random() * 0.4,   spy: 0.5 + Math.random() * 0.4,
+          r:   1.0 + Math.random() * 0.9,
+          energy: 0, cool: 0,
+          order: Math.hypot(pt.rx, pt.ry),  // intro stagger: center fires out first
         }
       })
+      const maxOrder = Math.max(...S.nodes.map(n => n.order)) || 1
+      S.nodes.forEach(n => { n.order /= maxOrder })
 
-      // ── Build edges ──
-      const newEdges = []
-      const maxConn  = 3
-
+      // Edges: K nearest neighbors *within* a distance threshold → tight, tissue-like
+      const K = 3
+      const maxD = R * 0.62
+      const edges = []
+      const seen  = new Set()
       for (let i = 0; i < S.nodes.length; i++) {
-        const n1    = S.nodes[i]
-        const dists = []
+        const a = S.nodes[i]
+        const near = []
         for (let j = 0; j < S.nodes.length; j++) {
           if (i === j) continue
-          const dx = S.nodes[j].baseX - n1.baseX
-          const dy = S.nodes[j].baseY - n1.baseY
-          dists.push({ index: j, dist: Math.hypot(dx, dy) })
+          const dx = S.nodes[j].bx - a.bx, dy = S.nodes[j].by - a.by
+          const d  = Math.sqrt(dx * dx + dy * dy)
+          if (d < maxD) near.push({ j, d })
         }
-        dists.sort((a, b) => a.dist - b.dist)
-
-        for (let k = 0; k < Math.min(maxConn, dists.length); k++) {
-          const ti = dists[k].index
-          if (newEdges.some(e => (e.from === i && e.to === ti) || (e.from === ti && e.to === i))) continue
-
-          const n2   = S.nodes[ti]
-          const dx   = n2.baseX - n1.baseX
-          const dy   = n2.baseY - n1.baseY
-          const dist = Math.hypot(dx, dy)
-          const nx   = -dy / dist
-          const ny   =  dx / dist
-          const bend = dist * 0.20 * (Math.random() < 0.5 ? 1 : -1)
-
-          newEdges.push({
-            from:    i,
-            to:      ti,
-            normalX: nx,
-            normalY: ny,
-            bendDist: bend,
-            control:  { x: 0, y: 0 },
-            // Intro: each edge gets a reveal order index
-            revealOrder: 0,   // filled below
+        near.sort((p, q) => p.d - q.d)
+        for (let k = 0; k < Math.min(K, near.length); k++) {
+          const j   = near[k].j
+          const key = i < j ? i + '-' + j : j + '-' + i
+          if (seen.has(key)) continue
+          seen.add(key)
+          const b   = S.nodes[j]
+          const dx  = b.bx - a.bx, dy = b.by - a.by
+          const len = Math.sqrt(dx * dx + dy * dy) || 1
+          edges.push({
+            from: i, to: j,
+            nx: -dy / len, ny: dx / len,
+            bend: len * 0.16 * (Math.random() < 0.5 ? 1 : -1),
+            control: { x: 0, y: 0 },
           })
         }
       }
-
-      // Sort edges by average node revealDelay for sequential draw-on
-      newEdges.forEach(e => {
-        e.revealOrder =
-          (S.nodes[e.from].revealDelay + S.nodes[e.to].revealDelay) / 2
+      S.edges = edges
+      S.adj   = S.nodes.map(() => [])
+      edges.forEach((e, idx) => {
+        S.adj[e.from].push({ to: e.to,   edge: idx })
+        S.adj[e.to  ].push({ to: e.from, edge: idx })
       })
-      newEdges.sort((a, b) => a.revealOrder - b.revealOrder)
-      // Normalize revealOrder 0→1
-      const maxRO = newEdges[newEdges.length - 1]?.revealOrder || 1
-      newEdges.forEach(e => { e.revealOrder /= maxRO })
-
-      S.edges = newEdges
-      S.adj   = Array.from({ length: S.nodes.length }, () => [])
-      S.edges.forEach((e, idx) => {
-        S.adj[e.from].push({ nodeIdx: e.to,   edgeIdx: idx, isReverse: false })
-        S.adj[e.to  ].push({ nodeIdx: e.from, edgeIdx: idx, isReverse: true  })
-      })
-
-      S.pulses = []
+      S.signals = []
     }
 
-    // ── Intro animation trigger ───────────────────────────────────────────────
-    const startIntro = (timestamp) => {
-      S.introPhase     = 'nodes'
-      S.introStart     = timestamp
-      S.introNodeReveal = 0
-      S.introEdgeReveal = 0
-      S.introPulseAlpha = 0
-    }
-
-    // ── Resize ───────────────────────────────────────────────────────────────
-    const handleResize = () => {
-      const rect    = canvas.getBoundingClientRect()
-      S.width       = rect.width
-      S.height      = rect.height
-      canvas.width  = S.width  * dpr
-      canvas.height = S.height * dpr
-      ctx.scale(dpr, dpr)
-
-      initNetwork(S.width, S.height)
-
-      // Re-init particles
-      const count  = Math.floor((S.width * S.height) / 14000)
-      S.particles  = Array.from({ length: count }, () => new Particle(S.width, S.height))
-    }
-
-    // ── Input handlers ────────────────────────────────────────────────────────
-    const handleMouseMove = (e) => {
-      S.mouse.x      = e.clientX
-      S.mouse.y      = e.clientY
-      S.mouse.active = true
-    }
-    const handleMouseLeave = () => {
-      S.mouse.active = false
-      S.mouse.x      = null
-      S.mouse.y      = null
-    }
-    const handleClick = (e) => {
-      if (!S.nodes.length) return
-      let closest = -1
-      let minD    = 180
-      S.nodes.forEach((n, i) => {
-        const d = Math.hypot(n.x - e.clientX, n.y - e.clientY)
-        if (d < minD) { minD = d; closest = i }
-      })
-      if (closest === -1) return
-      const paths = S.adj[closest]
-      if (paths?.length) {
-        const path = paths[Math.floor(Math.random() * paths.length)]
-        S.pulses.push(new Pulse(path.edgeIdx, path.isReverse, 0.008 + Math.random() * 0.004))
-        S.nodes[closest].pulseVal = 1.0
-      }
-    }
-
-    window.addEventListener('resize',     handleResize)
-    window.addEventListener('mousemove',  handleMouseMove)
-    window.addEventListener('mouseleave', handleMouseLeave)
-    window.addEventListener('click',      handleClick)
-    handleResize()
-
-    // ── Draw helpers ─────────────────────────────────────────────────────────
-
-    // Draws a single edge with a progress clip (for draw-on animation)
-    const drawEdge = (edge, alpha, highlight, drawProgress = 1, isMobile) => {
-      const n1 = S.nodes[edge.from]
-      const n2 = S.nodes[edge.to]
-      if (!n1 || !n2) return
-
-      const steps = Math.max(2, Math.floor(drawProgress * (isMobile ? 6 : 12)))
-
-      const lineW = highlight ? 1.6 : (isMobile ? 0.7 : 1.0)
-      const col   = highlight
-        ? `rgba(216, 180, 254, ${alpha})`
-        : `rgba(139, 92, 246, ${alpha})`
-
-      ctx.strokeStyle = col
-      ctx.lineWidth   = lineW
-      ctx.lineCap     = 'round'
-      ctx.beginPath()
-      for (let s = 0; s <= steps; s++) {
-        const t  = (s / steps) * drawProgress
-        const pt = getBezierPoint(n1, edge.control, n2, t)
-        s === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)
-      }
-      ctx.stroke()
-
-      // Subtle secondary glow line
-      if (!isMobile && highlight) {
-        ctx.strokeStyle = `rgba(167, 139, 250, ${alpha * 0.4})`
-        ctx.lineWidth   = 3.5
-        ctx.beginPath()
-        for (let s = 0; s <= steps; s++) {
-          const t  = (s / steps) * drawProgress
-          const pt = getBezierPoint(n1, edge.control, n2, t)
-          s === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)
+    // ── Neuron firing ───────────────────────────────────────────────────────────
+    const maxSignals = () => (S.isMobile ? 7 : 16)
+    const SIG_SPEED  = 0.85
+    const fireNode = (i, strength, spread, exclude = -1) => {
+      const n = S.nodes[i]
+      if (!n) return
+      n.energy = Math.min(1.6, n.energy + strength)
+      if (spread <= 0) return
+      const cap = maxSignals()
+      for (const a of S.adj[i]) {
+        if (a.to === exclude) continue
+        if (S.signals.length >= cap) break
+        if (Math.random() < spread) {
+          S.signals.push({
+            edge: a.edge, s: i, e: a.to, t: 0,
+            speed: SIG_SPEED * (0.8 + Math.random() * 0.5),
+            str: strength,
+            color: pickSignalColor(),
+          })
         }
-        ctx.stroke()
       }
     }
 
-    const drawNode = (node, alpha = 1, scale = 1, isMobile) => {
-      const { x, y, radius, hue, sat, lit, pulseVal } = node
-      const r = radius * scale * (isMobile ? 0.65 : 1.0)
+    // Quadratic-bezier point helpers (for signals traveling along curved synapses)
+    const qx = (a, c, b, t) => { const u = 1 - t; return u * u * a.x + 2 * u * t * c.x + t * t * b.x }
+    const qy = (a, c, b, t) => { const u = 1 - t; return u * u * a.y + 2 * u * t * c.y + t * t * b.y }
 
-      // Outer glow ring
-      if (!isMobile) {
-        const grd = ctx.createRadialGradient(x, y, 0, x, y, r * 4)
-        grd.addColorStop(0, `hsla(${hue}, ${sat}%, ${lit}%, ${0.18 * alpha})`)
-        grd.addColorStop(1, `hsla(${hue}, ${sat}%, ${lit}%, 0)`)
-        ctx.fillStyle = grd
-        ctx.beginPath()
-        ctx.arc(x, y, r * 4, 0, Math.PI * 2)
-        ctx.fill()
-      }
-
-      // Mid ring
-      ctx.fillStyle = `hsla(${hue}, ${sat}%, ${lit}%, ${0.35 * alpha})`
-      ctx.beginPath()
-      ctx.arc(x, y, r * 2.2, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Core dot
-      const coreGrd = ctx.createRadialGradient(x, y, 0, x, y, r)
-      coreGrd.addColorStop(0, `rgba(255,255,255,${alpha})`)
-      coreGrd.addColorStop(0.6, `hsla(${hue}, ${sat}%, ${lit}%, ${alpha})`)
-      coreGrd.addColorStop(1, `hsla(${hue}, ${sat}%, ${lit - 10}%, 0)`)
-      ctx.fillStyle = coreGrd
-      ctx.beginPath()
-      ctx.arc(x, y, r, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Pulse flare
-      if (pulseVal > 0.01) {
-        const flareR = r * 1.5 + (isMobile ? 6 : 12) * pulseVal
-
-        const flareGrd = ctx.createRadialGradient(x, y, 0, x, y, flareR)
-        flareGrd.addColorStop(0, `hsla(${hue}, 90%, 85%, ${pulseVal * 0.7 * alpha})`)
-        flareGrd.addColorStop(0.5, `hsla(${hue}, 80%, 70%, ${pulseVal * 0.35 * alpha})`)
-        flareGrd.addColorStop(1, `hsla(${hue}, 70%, 60%, 0)`)
-
-        ctx.fillStyle = flareGrd
-        ctx.beginPath()
-        ctx.arc(x, y, flareR, 0, Math.PI * 2)
-        ctx.fill()
-      }
+    // ── Resize ──────────────────────────────────────────────────────────────────
+    const resize = () => {
+      const rect = wrap.getBoundingClientRect()
+      S.W = rect.width
+      S.H = rect.height
+      canvas.width  = Math.round(S.W * dpr)
+      canvas.height = Math.round(S.H * dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)   // reset + scale (no accumulation)
+      initNetwork()
+      if (reduceMotion) renderStatic()
     }
 
-    const drawPulse = (pulse, alphaScale = 1, isMobile) => {
-      const edge = S.edges[pulse.edgeIndex]
-      if (!edge) return
-      const nS   = S.nodes[pulse.reverse ? edge.to   : edge.from]
-      const nE   = S.nodes[pulse.reverse ? edge.from : edge.to  ]
-      if (!nS || !nE) return
-
-      const startT = Math.max(0, pulse.progress - 0.28)
-      const endT   = pulse.progress
-      const steps  = isMobile ? 6 : 12
-
-      // Outer glow (desktop only)
-      if (!isMobile) {
-        ctx.strokeStyle = `rgba(139, 92, 246, ${0.35 * alphaScale})`
-        ctx.lineWidth   = 4.5
-        ctx.lineCap     = 'round'
-        ctx.beginPath()
-        for (let s = 0; s <= steps; s++) {
-          const t  = startT + (endT - startT) * (s / steps)
-          const pt = getBezierPoint(nS, edge.control, nE, t)
-          s === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)
-        }
-        ctx.stroke()
-      }
-
-      // Mid core
-      ctx.strokeStyle = `rgba(216, 180, 254, ${0.9 * alphaScale})`
-      ctx.lineWidth   = isMobile ? 1.5 : 2.2
-      ctx.beginPath()
-      for (let s = 0; s <= steps; s++) {
-        const t  = startT + (endT - startT) * (s / steps)
-        const pt = getBezierPoint(nS, edge.control, nE, t)
-        s === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)
-      }
-      ctx.stroke()
-
-      // White hot center
-      ctx.strokeStyle = `rgba(255, 255, 255, ${0.95 * alphaScale})`
-      ctx.lineWidth   = isMobile ? 0.5 : 0.8
-      ctx.beginPath()
-      for (let s = 0; s <= steps; s++) {
-        const t  = startT + (endT - startT) * (s / steps)
-        const pt = getBezierPoint(nS, edge.control, nE, t)
-        s === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)
-      }
-      ctx.stroke()
-    }
-
-    // ── Main animation loop ───────────────────────────────────────────────────
-    let firstFrame = true
-
-    const animate = (timestamp) => {
-      S.animId = requestAnimationFrame(animate)
-
-      // Skip render if scrolled past hero
-      const sy = window.scrollY || 0
-      if (sy > window.innerHeight * 0.95) return
-
-      // Trigger intro on first real frame
-      if (firstFrame) {
-        startIntro(timestamp)
-        firstFrame = false
-      }
-
-      const { width: W, height: H } = S
-      const isMobile = W < 768
-
+    // ── Draw a single frame ─────────────────────────────────────────────────────
+    const draw = (dt) => {
+      const { W, H } = S
+      const isMobile = S.isMobile
       ctx.clearRect(0, 0, W, H)
 
-      const time = timestamp
+      if (S.intro < 1) S.intro = Math.min(1, S.intro + dt / 1.6)
+      const introE = easeOutCubic(S.intro)
 
-      // ── 1. Update intro phase ─────────────────────────────────────────────
-      const elapsed     = timestamp - S.introStart
-      const nodesDur    = 1200  // ms — nodes pop in
-      const edgesDur    = 1400  // ms — edges draw
-      const pulsesDur   = 600   // ms — pulses fade in
+      // Ignição: quando o cérebro termina de "baixar", um surto explode do centro
+      if (S.intro >= 1 && !S.ignited) {
+        S.ignited = true
+        for (let i = 0; i < S.nodes.length; i++) {
+          if (S.nodes[i].order < 0.4) fireNode(i, 1.5, 0.9)
+        }
+      }
+      if (S.ignited && S.introGlow < 1) S.introGlow = Math.min(1, S.introGlow + dt / 1.8)
 
-      if (S.introPhase === 'nodes') {
-        S.introNodeReveal = Math.min(1, elapsed / nodesDur)
-        if (S.introNodeReveal >= 1) {
-          S.introPhase  = 'edges'
-          S.introStart  = timestamp
-        }
-      } else if (S.introPhase === 'edges') {
-        S.introNodeReveal = 1
-        S.introEdgeReveal = Math.min(1, elapsed / edgesDur)
-        if (S.introEdgeReveal >= 1) {
-          S.introPhase  = 'pulses'
-          S.introStart  = timestamp
-        }
-      } else if (S.introPhase === 'pulses') {
-        S.introEdgeReveal = 1
-        S.introPulseAlpha = Math.min(1, elapsed / pulsesDur)
-        if (S.introPulseAlpha >= 1) {
-          S.introPhase = 'done'
-        }
-      } else {
-        // done
-        S.introNodeReveal = 1
-        S.introEdgeReveal = 1
-        S.introPulseAlpha = 1
+      // Parallax eased toward cursor (very subtle)
+      const tX = S.mouse.active ? (S.mouse.x - W / 2) * 0.012 : 0
+      const tY = S.mouse.active ? (S.mouse.y - H / 2) * 0.012 : 0
+      S.viewX += (tX - S.viewX) * Math.min(1, dt * 3)
+      S.viewY += (tY - S.viewY) * Math.min(1, dt * 3)
+
+      const breath = 1 + Math.sin(S.clock * 0.5) * 0.012
+      const cx = W * 0.5
+      const cy = isMobile ? H * 0.14 : H * 0.16
+      const drift = isMobile ? 1.6 : 2.8
+
+      // Update nodes (drift + breathing + energy decay)
+      for (const n of S.nodes) {
+        n.x = cx + (n.bx - cx) * breath + Math.sin(n.phx + S.clock * n.spx) * drift
+        n.y = cy + (n.by - cy) * breath + Math.cos(n.phy + S.clock * n.spy) * drift
+        n.energy *= Math.exp(-dt * 2.3)
+        if (n.energy < 0.001) n.energy = 0
+        if (n.cool > 0) n.cool -= dt
       }
 
-      // ── 2. Breathing scale ────────────────────────────────────────────────
-      // Gentle 0.985 → 1.015 breathing on the whole brain
-      S.breathScale = 1 + Math.sin(time * 0.00045) * 0.015
-
-      // ── 3. Update nodes ───────────────────────────────────────────────────
-      const drift = isMobile ? 1.8 : 3.2
-      S.nodes.forEach(node => {
-        const ox = Math.sin(node.phaseX + time * node.speedX) * drift
-        const oy = Math.cos(node.phaseY + time * node.speedY) * drift
-        // Apply breathing around center
-        const cx = W * 0.5
-        const cy = isMobile ? H * 0.13 : H * 0.15
-        const bx = node.baseX
-        const by = node.baseY
-        const breathX = cx + (bx - cx) * S.breathScale
-        const breathY = cy + (by - cy) * S.breathScale
-        node.x = breathX + ox
-        node.y = breathY + oy
-
-        if (node.pulseVal > 0.01) node.pulseVal *= 0.90
-        else node.pulseVal = 0
-      })
-
-      // ── 4. Update edge control points ────────────────────────────────────
-      S.edges.forEach(edge => {
-        const n1 = S.nodes[edge.from]
-        const n2 = S.nodes[edge.to]
-        if (!n1 || !n2) return
-        const mx = (n1.x + n2.x) / 2
-        const my = (n1.y + n2.y) / 2
-        edge.control.x = mx + edge.normalX * edge.bendDist
-        edge.control.y = my + edge.normalY * edge.bendDist
-      })
-
-      // ── 5. Hovered node detection ─────────────────────────────────────────
-      S.hoveredNode = -1
-      if (!isMobile && S.mouse.active && S.mouse.x != null) {
-        let minD = 110
-        S.nodes.forEach((n, i) => {
-          const d = Math.hypot(n.x - S.mouse.x, n.y - S.mouse.y)
-          if (d < minD) { minD = d; S.hoveredNode = i }
-        })
-      }
-
-      // ── 6. Background particles ───────────────────────────────────────────
-      S.particles.forEach(p => {
-        p.update(W, H)
-        p.draw(ctx)
-      })
-
-      // ── 7. Draw edges (with intro draw-on) ───────────────────────────────
-      const edgeReveal  = easeInOutQuart(S.introEdgeReveal)
-
-      S.edges.forEach(edge => {
-        if (edgeReveal <= 0) return
-        // Each edge has revealOrder 0→1, only draw if edgeReveal > revealOrder
-        const localProgress = Math.max(0, Math.min(1,
-          (edgeReveal - edge.revealOrder * 0.6) / 0.4
-        ))
-        if (localProgress <= 0) return
-
-        const isHigh   = S.hoveredNode !== -1 &&
-                         (edge.from === S.hoveredNode || edge.to === S.hoveredNode)
-        const baseAlpha = isHigh ? 0.40 : 0.12
-
-        drawEdge(edge, baseAlpha * localProgress, isHigh, localProgress, isMobile)
-      })
-
-      // ── 8. Update & draw pulses ───────────────────────────────────────────
-      const maxPulses = isMobile ? 2 : 5
-      const nextPulses = []
-
-      S.pulses.forEach(pulse => {
-        const done = pulse.update()
-        const edge = S.edges[pulse.edgeIndex]
-        if (!edge) return
-
-        if (done) {
-          const arrivedIdx = pulse.reverse ? edge.from : edge.to
-          const originIdx  = pulse.reverse ? edge.to   : edge.from
-          if (S.nodes[arrivedIdx]) {
-            S.nodes[arrivedIdx].pulseVal = 1.0
-            const opts    = S.adj[arrivedIdx]
-            if (opts?.length && S.pulses.length < maxPulses) {
-              const fwd    = opts.filter(o => o.nodeIdx !== originIdx)
-              const pool   = fwd.length ? fwd : opts
-              const next   = pool[Math.floor(Math.random() * pool.length)]
-              nextPulses.push(new Pulse(next.edgeIdx, next.isReverse, pulse.speed))
-            }
+      // Cursor proximity → light up nearby neurons + occasionally fire them
+      if (!isMobile && S.mouse.active && S.intro > 0.5) {
+        const Rc2 = 150 * 150
+        for (let i = 0; i < S.nodes.length; i++) {
+          const n  = S.nodes[i]
+          const dx = n.x - S.mouse.x, dy = n.y - S.mouse.y
+          const d2 = dx * dx + dy * dy
+          if (d2 < Rc2) {
+            const f = 1 - Math.sqrt(d2) / 150
+            if (f * 0.7 > n.energy) n.energy = f * 0.7
+            if (f > 0.75 && n.cool <= 0) { fireNode(i, 0.5, 0.4); n.cool = 0.45 }
           }
-        } else {
-          nextPulses.push(pulse)
-          drawPulse(pulse, S.introPulseAlpha, isMobile)
         }
-      })
-
-      S.pulses = nextPulses
-
-      // Spawn ambient pulses
-      const targetAmbient = isMobile ? 1 : 3
-      if (S.pulses.length < targetAmbient && S.edges.length && S.introPhase !== 'idle' && S.introEdgeReveal > 0.8) {
-        const ei = Math.floor(Math.random() * S.edges.length)
-        S.pulses.push(new Pulse(ei, Math.random() < 0.5))
       }
 
-      // ── 9. Draw nodes (with intro staggered reveal) ───────────────────────
-      S.nodes.forEach((node, _i) => {
-        const nodeReveal = easeInOutQuart(S.introNodeReveal)
-        // Stagger by revealDelay (0→~1)
-        const localT = Math.max(0, Math.min(1,
-          (nodeReveal - node.revealDelay * 0.6) / 0.4
-        ))
-        if (localT <= 0) return
+      // Update edge control points from live node positions
+      for (const e of S.edges) {
+        const a = S.nodes[e.from], b = S.nodes[e.to]
+        e.control.x = (a.x + b.x) / 2 + e.nx * e.bend
+        e.control.y = (a.y + b.y) / 2 + e.ny * e.bend
+      }
 
-        const scale    = easeOutElastic(localT)
-        const alpha    = easeOutCubic(localT)
-        const isHov    = _i === S.hoveredNode
+      ctx.save()
+      ctx.translate(S.viewX, S.viewY)
 
-        // Extra glow for hovered node
-        if (isHov && !isMobile) {
-          const glow = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.radius * 9)
-          glow.addColorStop(0, `hsla(${node.hue}, 85%, 75%, 0.20)`)
-          glow.addColorStop(1, `hsla(${node.hue}, 85%, 65%, 0)`)
-          ctx.fillStyle = glow
+      // 1 — Synapses (subtle web, source-over). Active edges brighten.
+      const edgeReveal = clamp((introE - 0.15) / 0.85, 0, 1)
+      if (edgeReveal > 0) {
+        ctx.lineCap   = 'round'
+        ctx.lineWidth = isMobile ? 0.6 : 0.9
+        for (const e of S.edges) {
+          const a  = S.nodes[e.from], b = S.nodes[e.to]
+          const en = (a.energy + b.energy) * 0.5
+          const alpha = (0.05 + en * 0.5) * edgeReveal
+          if (alpha < 0.004) continue
+          ctx.strokeStyle = en > 0.05
+            ? `rgba(178,150,255,${alpha})`
+            : `rgba(130,108,246,${alpha})`
           ctx.beginPath()
-          ctx.arc(node.x, node.y, node.radius * 9, 0, Math.PI * 2)
-          ctx.fill()
+          ctx.moveTo(a.x, a.y)
+          ctx.quadraticCurveTo(e.control.x, e.control.y, b.x, b.y)
+          ctx.stroke()
         }
+      }
 
-        drawNode(node, alpha, scale * (isHov ? 1.4 : 1.0), isMobile)
-      })
+      // 2 — Glow layer (additive → overlapping glows bloom like firing neurons)
+      ctx.globalCompositeOperation = 'lighter'
 
-      // ── 10. Logo label (text watermark) — appears after edges are drawn ──
-      if (!isMobile && S.introEdgeReveal > 0.85) {
-        const textAlpha = easeOutCubic(Math.min(1, (S.introEdgeReveal - 0.85) / 0.15))
-        const cy        = H * 0.15
-        const R         = Math.min(W, H) * 0.23
+      // Nodes
+      for (const n of S.nodes) {
+        const reveal = clamp(introE * 1.4 - n.order * 0.5, 0, 1)
+        if (reveal <= 0) continue
+        const glow = 0.12 + Math.sin(S.clock * 0.8 + n.phx) * 0.03 + n.energy + easeOutCubic(S.introGlow) * 0.45
+        blit(haloSprite, n.x, n.y,
+          (isMobile ? 7 : 11) * n.r * (0.5 + glow),
+          (0.05 + glow * 0.4) * reveal)
+        blit(coreSprite, n.x, n.y,
+          (isMobile ? 1.7 : 2.4) * n.r * (0.7 + glow * 0.7),
+          (0.16 + glow * 0.75) * reveal)
+      }
 
-        ctx.save()
-        ctx.globalAlpha = textAlpha * 0.50
-        ctx.font        = '500 10px "Inter", system-ui, sans-serif'
-        ctx.letterSpacing = '0.22em'
-        ctx.textAlign   = 'center'
-        ctx.fillStyle   = 'rgba(216, 180, 254, 1)'
-        ctx.globalAlpha = 1
-        ctx.restore()
+      // Signals (electric pulses traveling synapse → synapse, with a short trail)
+      const trailR = isMobile ? 2.4 : 3.6
+      const alive  = []
+      for (const sig of S.signals) {
+        sig.t += sig.speed * dt
+        if (sig.t >= 1) {
+          const ns = sig.str * 0.6                    // cascade decays each hop
+          fireNode(sig.e, ns, ns > 0.28 ? 0.4 : 0, sig.s)
+          continue
+        }
+        alive.push(sig)
+        const a = S.nodes[sig.s], b = S.nodes[sig.e], c = S.edges[sig.edge].control
+        for (let q = 0; q < 3; q++) {
+          const tt = sig.t - q * 0.05
+          if (tt < 0) break
+          const fade = 1 - q * 0.35
+          blit(spriteFor(sig.color), qx(a, c, b, tt), qy(a, c, b, tt), trailR * fade, 0.9 * fade * S.intro)
+        }
+      }
+      S.signals = alive
+
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.globalAlpha = 1
+      ctx.restore()
+
+      // 3 — Spontaneous firing keeps the brain alive
+      if (S.intro > 0.6) {
+        S.fireTimer -= dt
+        if (S.fireTimer <= 0 && S.signals.length < maxSignals() * 0.62) {
+          fireNode((Math.random() * S.nodes.length) | 0, 1.0, 0.65)
+          S.fireTimer = 0.5 + Math.random() * 1.1
+        }
       }
     }
 
-    S.animId = requestAnimationFrame(animate)
+    // One calm static frame for reduced-motion users
+    const renderStatic = () => {
+      S.intro = 1
+      S.ignited = true
+      S.introGlow = 1
+      for (const n of S.nodes) { n.x = n.bx; n.y = n.by; n.energy = 0 }
+      draw(0)
+    }
+
+    // ── Loop control (pauses when hidden / scrolled away) ───────────────────────
+    let running = false, raf = 0, lastT = 0
+    const loop = (t) => {
+      if (!running) return
+      raf = requestAnimationFrame(loop)
+      let dt = (t - lastT) / 1000
+      lastT = t
+      if (dt > 0.05) dt = 0.05   // clamp big gaps (after pause / tab switch)
+      if (dt < 0) dt = 0
+      S.clock += dt
+      draw(dt)
+    }
+    const heroVisible = () => (window.scrollY || 0) < window.innerHeight * 0.95
+    const startLoop = () => {
+      if (running || reduceMotion) return
+      running = true
+      lastT = performance.now()
+      raf = requestAnimationFrame(loop)
+    }
+    const stopLoop = () => { running = false; if (raf) cancelAnimationFrame(raf); raf = 0 }
+
+    // ── Scroll: parallax + fade + pause, driven via refs (no React re-render) ───
+    let scrollScheduled = false
+    const applyScroll = () => {
+      scrollScheduled = false
+      const sy = window.scrollY || 0
+      const vh = window.innerHeight
+      const fadeStart = vh * 0.55
+      const op = clamp(1 - (sy - fadeStart) / (fadeStart * 0.75), 0, 1)
+      wrap.style.transform = `translate3d(0, ${sy * 0.5}px, 0)`
+      wrap.style.opacity   = String(Math.min(0.8, op * 0.8))
+      if (!document.hidden && sy < vh * 0.95) startLoop()
+      else stopLoop()
+    }
+    const onScroll = () => {
+      if (!scrollScheduled) { scrollScheduled = true; requestAnimationFrame(applyScroll) }
+    }
+
+    // ── Input ───────────────────────────────────────────────────────────────────
+    const onMove  = (e) => { S.mouse.x = e.clientX; S.mouse.y = e.clientY; S.mouse.active = true }
+    const onLeave = ()  => { S.mouse.active = false }
+    const onClick = (e) => {
+      if (!S.nodes.length || !heroVisible()) return
+      let best = -1, bd = 200 * 200
+      for (let i = 0; i < S.nodes.length; i++) {
+        const dx = S.nodes[i].x - e.clientX, dy = S.nodes[i].y - e.clientY
+        const d2 = dx * dx + dy * dy
+        if (d2 < bd) { bd = d2; best = i }
+      }
+      if (best >= 0) fireNode(best, 1.0, 0.75)
+    }
+    const onVis = () => {
+      if (document.hidden) stopLoop()
+      else if (heroVisible()) startLoop()
+    }
+
+    window.addEventListener('resize',     resize)
+    window.addEventListener('scroll',     onScroll, { passive: true })
+    window.addEventListener('mousemove',  onMove,   { passive: true })
+    window.addEventListener('mouseleave', onLeave)
+    window.addEventListener('click',      onClick)
+    document.addEventListener('visibilitychange', onVis)
+
+    resize()
+    applyScroll()
+    if (reduceMotion) renderStatic()
+    else startLoop()
 
     return () => {
-      window.removeEventListener('resize',     handleResize)
-      window.removeEventListener('mousemove',  handleMouseMove)
-      window.removeEventListener('mouseleave', handleMouseLeave)
-      window.removeEventListener('click',      handleClick)
-      cancelAnimationFrame(S.animId)
+      stopLoop()
+      window.removeEventListener('resize',     resize)
+      window.removeEventListener('scroll',     onScroll)
+      window.removeEventListener('mousemove',  onMove)
+      window.removeEventListener('mouseleave', onLeave)
+      window.removeEventListener('click',      onClick)
+      document.removeEventListener('visibilitychange', onVis)
     }
   }, [])
 
-  // ── Parallax & fade ──────────────────────────────────────────────────────────
-  const parallaxY   = scrollY * 0.38
-  const vh          = typeof window !== 'undefined' ? window.innerHeight : 800
-  const fadeStart   = vh * 0.55
-  const canvasOpacity = Math.max(0, 1 - (scrollY - fadeStart) / (fadeStart * 0.75))
-
   return (
     <>
-      {/* ── Static background layer ────────────────────────────────────────── */}
+      {/* ── Static atmospheric layer ─────────────────────────────────────────── */}
       <div
         className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
         aria-hidden="true"
       >
-        {/* ── Atmospheric glows ── */}
+        {/* Atmospheric glows */}
         <span
           className="absolute -top-40 left-1/2 -translate-x-1/2 rounded-full"
           style={{
@@ -733,7 +484,7 @@ export default function BgFx() {
           }}
         />
 
-        {/* ── Perspective grid ── */}
+        {/* Perspective grid */}
         <svg
           className="absolute inset-0 h-full w-full"
           xmlns="http://www.w3.org/2000/svg"
@@ -767,7 +518,7 @@ export default function BgFx() {
           </g>
         </svg>
 
-        {/* ── Film grain ── */}
+        {/* Film grain */}
         <span
           className="absolute inset-0 opacity-[0.035] mix-blend-overlay"
           style={{
@@ -775,7 +526,7 @@ export default function BgFx() {
           }}
         />
 
-        {/* ── Scanlines ── */}
+        {/* Scanlines */}
         <span
           className="absolute inset-0"
           style={{
@@ -785,18 +536,17 @@ export default function BgFx() {
         />
       </div>
 
-      {/* ── Neural canvas (parallax + fade) ──────────────────────────────────── */}
+      {/* ── Neural canvas (parallax + fade handled imperatively via ref) ───────── */}
       <div
+        ref={wrapRef}
         aria-hidden="true"
         style={{
-          position:  'fixed',
-          inset:      0,
-          zIndex:    -9,
+          position: 'fixed',
+          inset: 0,
+          zIndex: -9,
           pointerEvents: 'none',
-          transform: `translateY(${parallaxY}px)`,
-          opacity:    Math.min(0.80, canvasOpacity * 0.80),
+          opacity: 0.8,
           willChange: 'transform, opacity',
-          transition: 'opacity 0.12s linear',
         }}
       >
         <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />

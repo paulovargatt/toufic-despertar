@@ -11,12 +11,12 @@ export default function Offer() {
             className="absolute -inset-4 -z-10 rounded-[2.5rem] blur-3xl"
             style={{
               background:
-                'radial-gradient(60% 60% at 50% 40%, var(--color-grape), var(--color-violet) 55%, transparent 75%)',
-              opacity: 0.45,
+                'radial-gradient(60% 60% at 50% 32%, rgba(255,138,31,0.30), var(--color-grape) 48%, transparent 76%)',
+              opacity: 0.5,
             }}
           />
           <div className="glass reveal rounded-xl p-8 text-center sm:p-12">
-            <span className="inline-block rounded-full border border-electric/30 bg-electric/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+            <span className="inline-block rounded-full border border-amber/35 bg-amber/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-soft">
               Valor promocional
             </span>
             <h2 className="mt-6 text-3xl font-bold sm:text-4xl">Comece sua reprogramação hoje</h2>
@@ -29,19 +29,21 @@ export default function Offer() {
               <span className="text-sm text-soft/55">
                 de <s>R$ 297</s> por apenas
               </span>
-              <span className="mt-1 flex items-start font-display font-extrabold leading-none text-white">
-                <span className="mt-3 mr-1 text-2xl text-accent">R$</span>
-                <span className="text-7xl sm:text-8xl">47</span>
+              <span className="mt-1 flex items-start font-display font-extrabold leading-none">
+                <span className="mt-3 mr-1 text-2xl text-amber-soft">R$</span>
+                <span className="text-amber-grad text-7xl sm:text-8xl">47</span>
               </span>
-              <span className="mt-2 text-sm text-soft/60">pagamento único · acesso imediato</span>
+              <span className="mt-2 text-sm text-soft/60">
+                pagamento único · <span className="text-cyan-soft/80">acesso imediato</span>
+              </span>
             </div>
 
             {/* TODO: trocar href="#" pelo link real de checkout */}
-            <Cta href="#" checkout block large>
+            <Cta href="#" checkout block large className="btn-pulse">
               Quero despertar minha autoconfiança
             </Cta>
 
-            <p className="mt-5 text-sm text-accent/80">
+            <p className="mt-5 text-sm text-amber-soft/80">
               ⚡ Esse preço é promocional e pode mudar a qualquer momento.
             </p>
           </div>
@@ -49,7 +51,7 @@ export default function Offer() {
 
         {/* Garantia */}
         <div className="glass reveal mt-8 flex flex-col items-center gap-5 rounded-xl p-8 text-center sm:flex-row sm:text-left">
-          <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-electric/25 bg-electric/5 text-electric">
+          <span className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-cyan/25 bg-cyan/[0.06] text-cyan">
             <Shield className="h-8 w-8" />
           </span>
           <div>

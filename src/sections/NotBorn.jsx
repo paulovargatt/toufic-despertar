@@ -1,4 +1,4 @@
-import { Section, Container, SectionTitle, Lead, Body } from '../components/Primitives'
+import { Section, Container, SectionTitle, Body } from '../components/Primitives'
 
 const conclusions = [
   '"melhor eu me esconder."',
@@ -66,15 +66,36 @@ export default function NotBorn() {
 
         <Body className="mt-10">
           E essa conclusão virou identidade. Mas a sua insegurança{' '}
-          <strong className="text-white">não é sua essência</strong>. É uma repetição. É um comando
-          antigo. É uma lavagem cerebral que a vida fez em você sem pedir permissão.
+          <strong className="text-white">não é a sua essência</strong> — é só um comando antigo. Uma
+          lavagem cerebral que a vida fez em você sem pedir licença.
         </Body>
 
-        <Lead className="mt-10 text-center">
-          Agora chegou a hora de fazer o caminho inverso.
-          <br />
-          <span className="text-grad">Uma lavagem cerebral consciente.</span>
-        </Lead>
+        {/* A virada — o sinal novo acende em ciano */}
+        <div className="reveal mt-12 text-center">
+          <div className="mb-4 inline-flex items-center gap-2.5">
+            <span
+              className="h-2 w-2 rounded-full bg-cyan"
+              style={{
+                animation: 'signal-pulse 1.6s ease-in-out infinite',
+                boxShadow: '0 0 10px 2px rgba(34,211,238,0.6)',
+              }}
+            />
+            <span
+              className="text-[0.62rem] uppercase tracking-[0.25em] text-cyan/60"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              novo comando disponível
+            </span>
+          </div>
+          <p
+            className="text-2xl font-semibold leading-snug text-white sm:text-3xl"
+            style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}
+          >
+            Agora é hora de fazer o caminho inverso.
+            <br />
+            <span className="text-cyan-grad">Uma lavagem cerebral consciente.</span>
+          </p>
+        </div>
       </Container>
     </Section>
   )

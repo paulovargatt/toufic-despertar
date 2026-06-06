@@ -29,9 +29,9 @@ export default function Cycle() {
     <Section>
       <Container>
         <SectionTitle center className="mb-12">
-          Talvez você esteja preso
+          O mesmo ciclo,
           <br />
-          no mesmo ciclo
+          em toda área da sua vida
         </SectionTitle>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">

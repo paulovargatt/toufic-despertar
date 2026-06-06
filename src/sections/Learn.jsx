@@ -26,9 +26,9 @@ export default function Learn() {
           {items.map((t) => (
             <li
               key={t}
-              className="reveal flex items-start gap-3 rounded-xl border border-electric/10 bg-white/[0.02] px-4 py-4"
+              className="reveal flex items-start gap-3 rounded-xl border border-cyan/10 bg-white/[0.02] px-4 py-4 transition-colors hover:border-cyan/25"
             >
-              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-electric/30 text-electric">
+              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-cyan/30 text-cyan">
                 <Check className="h-4 w-4" />
               </span>
               <span className="text-sm leading-relaxed text-soft/85">{t}</span>

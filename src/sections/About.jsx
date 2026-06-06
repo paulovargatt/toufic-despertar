@@ -35,26 +35,38 @@ export default function About() {
         <div>
           <Eyebrow>Quem vai te guiar</Eyebrow>
           <SectionTitle className="mb-6">
-            Foi por isso que criei o <span className="text-grad">Despertar da Autoconfiança</span>
+            Eu também já fui refém da minha{' '}
+            <span className="text-grad">própria insegurança</span>
           </SectionTitle>
+
           <Body className="mb-5">
-            Meu nome é <strong className="text-white">Toufic</strong>. Criei esse processo para
-            pessoas que cansaram de viver como reféns da própria insegurança — pessoas que sabem que
-            existe uma versão maior dentro delas, mas ainda se sentem presas a uma mente antiga.
+            Meu nome é <strong className="text-white">Toufic</strong>. Já fui o cara que se sentia
+            invisível, que se comparava com todo mundo e via gente menos preparada ocupando os
+            espaços que eu queria — enquanto eu travava dentro da própria cabeça.
           </Body>
-          <Body className="mb-5">
-            Eu conheço essa prisão porque já estive nela. Também já fui o cara que se sentia
-            invisível, que se comparava, que tinha medo de errar, que via pessoas menos preparadas
-            ocupando espaços que eu queria — enquanto eu continuava preso dentro da minha própria
-            cabeça.
-          </Body>
+
+          {/* A virada — pull-quote em ciano (o sinal novo) */}
+          <figure className="glass-signal reveal my-7 rounded-lg p-6 sm:p-7">
+            <span
+              aria-hidden
+              className="block text-3xl leading-none text-cyan/50"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              “
+            </span>
+            <blockquote className="-mt-3 text-lg leading-snug text-white sm:text-xl">
+              Até cair a ficha: eu não precisava de{' '}
+              <span className="text-soft/60 line-through decoration-electric/50">mais autoestima</span>
+              . Eu precisava <span className="text-cyan-grad font-semibold">reprogramar a identidade</span>{' '}
+              que eu tinha aceitado como minha.
+            </blockquote>
+          </figure>
+
           <Body>
-            Até entender uma coisa: eu não precisava apenas melhorar minha autoestima.{' '}
-            <strong className="text-white">
-              Eu precisava reprogramar a identidade que tinha aceitado como minha.
-            </strong>{' '}
-            Foi aí que nasceu este caminho direto para quebrar crenças antigas, reconstruir sua
-            autoimagem e ativar uma confiança mais natural, firme e magnética.
+            Foi aí que nasceu este caminho direto: quebrar crenças antigas, reconstruir sua
+            autoimagem e ativar uma confiança{' '}
+            <strong className="text-white">natural, firme e magnética</strong> — sem virar um
+            personagem que não é você.
           </Body>
         </div>
       </Container>

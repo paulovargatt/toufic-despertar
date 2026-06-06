@@ -10,7 +10,7 @@ const lines = [
   <>Imagine parar de aceitar migalhas só para não ficar sozinho.</>,
   <>
     Imagine olhar para uma oportunidade e pensar:{' '}
-    <em className="text-accent">"eu posso ocupar esse espaço."</em>
+    <em className="text-cyan-soft/90 not-italic font-medium">"eu posso ocupar esse espaço."</em>
   </>,
   <>
     Imagine ser visto, ouvido e respeitado{' '}
@@ -30,7 +30,7 @@ export default function Imagine() {
           {lines.map((line, i) => (
             <p
               key={i}
-              className="reveal rounded-lg border border-white/[0.07] bg-gradient-to-r from-electric/[0.06] to-transparent px-6 py-5 text-lg leading-relaxed text-soft/85"
+              className="reveal rounded-lg border border-white/[0.07] border-l-2 border-l-cyan/40 bg-gradient-to-r from-cyan/[0.07] to-transparent px-6 py-5 text-lg leading-relaxed text-soft/85"
             >
               {line}
             </p>
@@ -39,8 +39,8 @@ export default function Imagine() {
 
         <Body center className="mt-12 max-w-2xl">
           Isso não acontece porque você decorou frases motivacionais. Acontece porque sua mente recebe{' '}
-          <strong className="text-white">um novo comando</strong>. E quando você muda a forma como se
-          percebe, o mundo começa a responder diferente também.
+          <span className="text-cyan-grad font-semibold">um novo comando</span>. E quando você muda a
+          forma como se percebe, o mundo começa a responder diferente também.
         </Body>
       </Container>
     </Section>

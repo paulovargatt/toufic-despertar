@@ -41,7 +41,7 @@ function FaqItem({ q, a }) {
       >
         <span className="text-base font-medium text-white sm:text-lg">{q}</span>
         <Plus
-          className={`h-5 w-5 shrink-0 text-electric transition-transform duration-300 ${
+          className={`h-5 w-5 shrink-0 text-cyan transition-transform duration-300 ${
             open ? 'rotate-45' : ''
           }`}
         />

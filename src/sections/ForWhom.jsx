@@ -31,18 +31,18 @@ export default function ForWhom() {
         </SectionTitle>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* É para você */}
-          <div className="glass reveal rounded-lg p-8 sm:p-10">
+          {/* É para você — card aceso em ciano */}
+          <div className="glass-signal reveal rounded-lg p-8 sm:p-10">
             <h3 className="mb-6 flex items-center gap-3 text-xl font-semibold text-white">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-electric/15 text-electric">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-cyan/15 text-cyan">
                 <Check className="h-5 w-5" />
               </span>
               É para você que…
             </h3>
             <ul className="space-y-3">
               {yes.map((t) => (
-                <li key={t} className="flex gap-3 text-soft/85">
-                  <Check className="mt-1 h-4 w-4 shrink-0 text-electric" />
+                <li key={t} className="flex gap-3 text-soft/90">
+                  <Check className="mt-1 h-4 w-4 shrink-0 text-cyan" />
                   <span>{t}</span>
                 </li>
               ))}
