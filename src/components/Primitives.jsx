@@ -19,7 +19,7 @@ export function Section({ id, alt = false, className = '', children }) {
         alt
           ? {
               background:
-                'linear-gradient(180deg, transparent, rgba(80, 20, 180, 0.028) 12%, rgba(80, 20, 180, 0.028) 88%, transparent)',
+                'linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.014) 12%, rgba(255, 255, 255, 0.014) 88%, transparent)',
             }
           : {}
       }

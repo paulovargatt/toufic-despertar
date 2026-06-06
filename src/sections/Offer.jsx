@@ -1,5 +1,16 @@
 import { Section, Container, Cta } from '../components/Primitives'
-import { Shield } from '../components/icons'
+import { Shield, Check } from '../components/icons'
+
+const CHECKOUT = 'https://pay.kiwify.com.br/SoVEdo7'
+
+// Stack de valor — cada entrega com seu valor percebido. Soma = R$ 297 (a âncora).
+const stack = [
+  ['Programa Despertar da Autoconfiança · 7 aulas', 'R$ 97'],
+  ['Exercícios de reprogramação mental', 'R$ 47'],
+  ['Ferramentas para reconstruir sua autoimagem', 'R$ 37'],
+  ['Estratégias contra medo, ansiedade e comparação', 'R$ 37'],
+  ['Método do Capital Magnético', 'R$ 79'],
+]
 
 export default function Offer() {
   return (
@@ -25,10 +36,39 @@ export default function Offer() {
               O objetivo do Despertar é ser acessível para quem está pronto para começar.
             </p>
 
+            {/* Stack de valor — tudo que está incluído + valor percebido de cada item */}
+            <div className="mx-auto mt-8 max-w-md text-left">
+              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-soft/45">
+                Tudo que você leva
+              </p>
+              <ul className="space-y-3">
+                {stack.map(([label, value]) => (
+                  <li
+                    key={label}
+                    className="flex items-center justify-between gap-4 border-b border-white/[0.06] pb-3"
+                  >
+                    <span className="flex items-start gap-2.5 text-sm text-soft/85">
+                      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-cyan/40 text-cyan">
+                        <Check className="h-3 w-3" />
+                      </span>
+                      {label}
+                    </span>
+                    <span className="shrink-0 text-sm font-medium text-soft/70">{value}</span>
+                  </li>
+                ))}
+                <li className="flex items-center justify-between gap-4 pt-1">
+                  <span className="text-sm font-semibold uppercase tracking-[0.14em] text-soft/55">
+                    Valor total
+                  </span>
+                  <span className="shrink-0 text-lg font-semibold text-soft/60 line-through decoration-amber/40">
+                    R$ 297
+                  </span>
+                </li>
+              </ul>
+            </div>
+
             <div className="my-8 flex flex-col items-center">
-              <span className="text-sm text-soft/55">
-                de <s>R$ 297</s> por apenas
-              </span>
+              <span className="text-sm text-soft/55">hoje, por apenas</span>
               <span className="mt-1 flex items-start font-display font-extrabold leading-none">
                 <span className="mt-3 mr-1 text-2xl text-amber-soft">R$</span>
                 <span className="text-amber-grad text-7xl sm:text-8xl">47</span>
@@ -38,8 +78,7 @@ export default function Offer() {
               </span>
             </div>
 
-            {/* TODO: trocar href="#" pelo link real de checkout */}
-            <Cta href="#" checkout block large className="btn-pulse">
+            <Cta href={CHECKOUT} checkout block large className="btn-pulse">
               Quero despertar minha autoconfiança
             </Cta>
 

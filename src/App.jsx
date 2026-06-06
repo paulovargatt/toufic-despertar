@@ -12,9 +12,9 @@ import About from './sections/About'
 import WhatIsIt from './sections/WhatIsIt'
 import Journey from './sections/Journey'
 import Features from './sections/Features'
-import Learn from './sections/Learn'
 import Imagine from './sections/Imagine'
 import ForWhom from './sections/ForWhom'
+import Proof from './sections/Proof'
 import Offer from './sections/Offer'
 import Faq from './sections/Faq'
 import FinalCta from './sections/FinalCta'
@@ -42,11 +42,11 @@ export default function App() {
         <SectionDivider />
         <Features />
         <SectionDivider />
-        <Learn />
-        <SectionDivider />
         <Imagine />
         <SectionDivider />
         <ForWhom />
+        <SectionDivider />
+        <Proof />
         <SectionDivider />
         <Offer />
         <SectionDivider />

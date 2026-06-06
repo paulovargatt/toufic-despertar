@@ -82,8 +82,7 @@ export default function FinalCta() {
         </ul>
 
         <div className="reveal mt-10 flex flex-col items-center gap-4">
-          {/* TODO: trocar href="#" pelo link real de checkout */}
-          <Cta href="#" checkout large className="btn-pulse">
+          <Cta href="https://pay.kiwify.com.br/SoVEdo7" checkout large className="btn-pulse">
             Quero despertar minha autoconfiança
           </Cta>
           <span className="text-sm text-soft/60">

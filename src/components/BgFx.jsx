@@ -53,6 +53,16 @@ export default function BgFx() {
       fireTimer: 0.6,
     }
 
+    // ── Sinaliza ao resto da página que o cérebro já "carregou" ──────────────────
+    // O Hero escuta este evento para iniciar a sequência cinematográfica
+    // (pré-headline → headline → sub) só depois do cérebro aparecer.
+    let readySignaled = false
+    const signalReady = () => {
+      if (readySignaled) return
+      readySignaled = true
+      try { window.dispatchEvent(new Event('brain:ready')) } catch { /* noop */ }
+    }
+
     // ── Pre-rendered glow sprites (built once, blitted per frame) ───────────────
     // Drawing a cached sprite with drawImage is far cheaper than allocating a
     // radial gradient every frame — this is the core of the optimization.
@@ -214,6 +224,10 @@ export default function BgFx() {
       if (S.intro < 1) S.intro = Math.min(1, S.intro + dt / 1.6)
       const introE = easeOutCubic(S.intro)
 
+      // Cérebro essencialmente formado → libera o texto (ignição final acontece logo
+      // depois, por baixo, criando um handoff suave em vez de um "stop-and-go")
+      if (S.intro >= 0.82) signalReady()
+
       // Ignição: quando o cérebro termina de "baixar", um surto explode do centro
       if (S.intro >= 1 && !S.ignited) {
         S.ignited = true
@@ -346,6 +360,7 @@ export default function BgFx() {
       S.introGlow = 1
       for (const n of S.nodes) { n.x = n.bx; n.y = n.by; n.energy = 0 }
       draw(0)
+      signalReady()
     }
 
     // ── Loop control (pauses when hidden / scrolled away) ───────────────────────
@@ -378,7 +393,7 @@ export default function BgFx() {
       const fadeStart = vh * 0.55
       const op = clamp(1 - (sy - fadeStart) / (fadeStart * 0.75), 0, 1)
       wrap.style.transform = `translate3d(0, ${sy * 0.5}px, 0)`
-      wrap.style.opacity   = String(Math.min(0.8, op * 0.8))
+      wrap.style.opacity   = String(Math.min(0.7, op * 0.7))
       if (!document.hidden && sy < vh * 0.95) startLoop()
       else stopLoop()
     }
@@ -434,53 +449,43 @@ export default function BgFx() {
         className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
         aria-hidden="true"
       >
-        {/* Atmospheric glows */}
+        {/* Atmospheric glows — base PRETA. Roxo/ciano só como destaque contido no topo (hero).
+           O resto da página fica preto com, no máximo, profundidade neutra (cinza) quase imperceptível. */}
+
+        {/* Destaque roxo contido — atrás do cérebro / hero */}
         <span
           className="absolute -top-40 left-1/2 -translate-x-1/2 rounded-full"
           style={{
-            width: '56rem', height: '56rem',
-            background: 'radial-gradient(circle, rgba(76,29,149,0.07) 0%, rgba(50,10,120,0.03) 45%, transparent 70%)',
-            filter: 'blur(120px)',
+            width: '50rem', height: '50rem',
+            background: 'radial-gradient(circle, rgba(76,29,149,0.06) 0%, rgba(50,10,120,0.02) 45%, transparent 70%)',
+            filter: 'blur(130px)',
           }}
         />
+        {/* Toque de ciano — o "sinal novo", também contido no hero */}
         <span
-          className="absolute top-8 left-1/2 -translate-x-1/2 rounded-full"
+          className="absolute top-[4%] right-[14%] rounded-full"
           style={{
-            width: '28rem', height: '28rem',
-            background: 'radial-gradient(circle, rgba(109,40,217,0.06) 0%, transparent 65%)',
-            filter: 'blur(70px)',
+            width: '24rem', height: '24rem',
+            background: 'radial-gradient(circle, rgba(34,211,238,0.035) 0%, transparent 68%)',
+            filter: 'blur(110px)',
           }}
         />
+
+        {/* Profundidade neutra (cinza) — evita o preto chapado sem trazer cor */}
         <span
-          className="absolute top-[38%] -left-56 rounded-full"
+          className="absolute top-[46%] -left-56 rounded-full"
           style={{
             width: '44rem', height: '44rem',
-            background: 'radial-gradient(circle, rgba(88,28,135,0.05) 0%, transparent 68%)',
-            filter: 'blur(140px)',
+            background: 'radial-gradient(circle, rgba(140,140,140,0.022) 0%, transparent 70%)',
+            filter: 'blur(150px)',
           }}
         />
         <span
-          className="absolute top-[52%] -right-56 rounded-full"
+          className="absolute bottom-[6%] -right-48 rounded-full"
           style={{
-            width: '48rem', height: '48rem',
-            background: 'radial-gradient(circle, rgba(109,40,217,0.045) 0%, transparent 70%)',
-            filter: 'blur(140px)',
-          }}
-        />
-        <span
-          className="absolute bottom-0 -right-40 rounded-full"
-          style={{
-            width: '40rem', height: '40rem',
-            background: 'radial-gradient(circle, rgba(124,58,237,0.04) 0%, transparent 70%)',
-            filter: 'blur(120px)',
-          }}
-        />
-        <span
-          className="absolute bottom-[8%] -left-40 rounded-full"
-          style={{
-            width: '36rem', height: '36rem',
-            background: 'radial-gradient(circle, rgba(76,29,149,0.04) 0%, transparent 65%)',
-            filter: 'blur(110px)',
+            width: '42rem', height: '42rem',
+            background: 'radial-gradient(circle, rgba(140,140,140,0.018) 0%, transparent 70%)',
+            filter: 'blur(150px)',
           }}
         />
 
@@ -491,20 +496,20 @@ export default function BgFx() {
           preserveAspectRatio="xMidYMid slice"
           viewBox="0 0 1440 900"
           aria-hidden="true"
-          style={{ opacity: 0.028 }}
+          style={{ opacity: 0.03 }}
         >
           <defs>
             <linearGradient id="gfade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor="#7c3aed" stopOpacity="0"   />
-              <stop offset="30%"  stopColor="#7c3aed" stopOpacity="0.3" />
-              <stop offset="72%"  stopColor="#7c3aed" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1" />
+              <stop offset="0%"   stopColor="#8a8a8a" stopOpacity="0"   />
+              <stop offset="30%"  stopColor="#8a8a8a" stopOpacity="0.3" />
+              <stop offset="72%"  stopColor="#8a8a8a" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#8a8a8a" stopOpacity="0.1" />
             </linearGradient>
             <mask id="gmask">
               <rect width="1440" height="900" fill="url(#gfade)" />
             </mask>
           </defs>
-          <g mask="url(#gmask)" stroke="#7c3aed" strokeWidth="0.55" fill="none">
+          <g mask="url(#gmask)" stroke="#8a8a8a" strokeWidth="0.55" fill="none">
             {Array.from({ length: 16 }, (_, i) => {
               const t = i / 15
               const y = 280 + t * 620
@@ -545,7 +550,7 @@ export default function BgFx() {
           inset: 0,
           zIndex: -9,
           pointerEvents: 'none',
-          opacity: 0.8,
+          opacity: 0.7,
           willChange: 'transform, opacity',
         }}
       >
