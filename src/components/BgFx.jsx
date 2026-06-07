@@ -40,7 +40,10 @@ export default function BgFx() {
     if (!ctx) return
 
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    // DPR menor no mobile → metade dos pixels p/ preencher por frame (canvas usa
+    // compositing 'lighter' + sombras, que são caros por pixel). Grande ganho de jank.
+    const mobileInit = window.innerWidth < 768
+    const dpr = Math.min(window.devicePixelRatio || 1, mobileInit ? 1.5 : 2)
 
     // Mutable state bucket (kept off React to avoid re-renders)
     const S = {
@@ -221,12 +224,12 @@ export default function BgFx() {
       const isMobile = S.isMobile
       ctx.clearRect(0, 0, W, H)
 
-      if (S.intro < 1) S.intro = Math.min(1, S.intro + dt / 1.6)
+      if (S.intro < 1) S.intro = Math.min(1, S.intro + dt / 1.3)
       const introE = easeOutCubic(S.intro)
 
       // Cérebro essencialmente formado → libera o texto (ignição final acontece logo
       // depois, por baixo, criando um handoff suave em vez de um "stop-and-go")
-      if (S.intro >= 0.82) signalReady()
+      if (S.intro >= 0.62) signalReady()
 
       // Ignição: quando o cérebro termina de "baixar", um surto explode do centro
       if (S.intro >= 1 && !S.ignited) {
@@ -364,7 +367,10 @@ export default function BgFx() {
     }
 
     // ── Loop control (pauses when hidden / scrolled away) ───────────────────────
-    let running = false, raf = 0, lastT = 0
+    // No mobile limitamos a ~32fps: o cérebro roda em paralelo com o decode do
+    // vídeo, então metade dos frames libera CPU/GPU sem perder a sensação de vida
+    // (o dt acumulado mantém a velocidade do movimento correta).
+    let running = false, raf = 0, lastT = 0, acc = 0
     const loop = (t) => {
       if (!running) return
       raf = requestAnimationFrame(loop)
@@ -372,6 +378,13 @@ export default function BgFx() {
       lastT = t
       if (dt > 0.05) dt = 0.05   // clamp big gaps (after pause / tab switch)
       if (dt < 0) dt = 0
+      const frameInterval = S.isMobile ? 1 / 32 : 0
+      if (frameInterval) {
+        acc += dt
+        if (acc < frameInterval) return
+        dt = acc
+        acc = 0
+      }
       S.clock += dt
       draw(dt)
     }

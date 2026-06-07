@@ -279,14 +279,22 @@ export default function HLSPlayer({
         if (!isMounted) return
 
         if (Hls.isSupported()) {
+          // ── Config VOD enxuta ──
+          // O player é renderizado num box de ~280px. Buffer/resolução agressivos
+          // (maxBuffer 600s + sem cap de nível) faziam o HLS baixar o vídeo INTEIRO
+          // em alta resolução continuamente → "page loaded too slowly", Speed Index
+          // alto e travamento no mobile (decode + rede + memória).
+          const ua = navigator.userAgent || ''
+          const lowPower = /Android|iPhone|iPad|iPod/i.test(ua)
           hlsInstance = new Hls({
-            enableWorker: false,
-            lowLatencyMode: true,
-            backBufferLength: 90,
-            maxBufferLength: 600,
-            maxMaxBufferLength: 1200,
-            maxBufferSize: 60 * 1000 * 1000,
+            enableWorker: true,           // demux fora da main thread → menos jank
+            lowLatencyMode: false,        // é VOD, não live
+            backBufferLength: 30,
+            maxBufferLength: lowPower ? 20 : 40,
+            maxMaxBufferLength: lowPower ? 40 : 90,
+            maxBufferSize: (lowPower ? 24 : 48) * 1000 * 1000,
             maxBufferHole: 0.5,
+            capLevelToPlayerSize: true,   // não baixa 1080p/4K dentro de um box de 280px
           })
 
           hlsRef.current = hlsInstance
@@ -433,10 +441,20 @@ export default function HLSPlayer({
       }
     }
 
-    initializePlayer()
+    // Adia a carga do hls.js (~160KB gzip) p/ depois do primeiro paint, para não
+    // disputar banda com o JS/CSS crítico no mobile. O vídeo só fica visível no
+    // stage 4 (~2.7s), então o preview continua pronto a tempo de aparecer.
+    const schedule = (cb) =>
+      typeof requestIdleCallback === 'function'
+        ? requestIdleCallback(cb, { timeout: 1200 })
+        : setTimeout(cb, 300)
+    const unschedule = (id) =>
+      typeof cancelIdleCallback === 'function' ? cancelIdleCallback(id) : clearTimeout(id)
+    const initId = schedule(() => { if (isMounted) initializePlayer() })
 
     return () => {
       isMounted = false
+      unschedule(initId)
       stopTimeTracking()
 
       // Salvar tempo final antes de destruir

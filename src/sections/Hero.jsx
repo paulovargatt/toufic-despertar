@@ -72,7 +72,7 @@ function useTyper({ total, start, instant, msPerChar, onDone }) {
 const PRE_TEXT = 'DESPERTAR DA AUTOCONFIANÇA'
 
 function PreHead({ start, instant, gone, onDone }) {
-  const n = useTyper({ total: PRE_TEXT.length, start, instant, msPerChar: 46, onDone })
+  const n = useTyper({ total: PRE_TEXT.length, start, instant, msPerChar: 32, onDone })
   const started = start || instant
   const done = n >= PRE_TEXT.length
   const chars = [...PRE_TEXT]
@@ -106,7 +106,7 @@ const GOLD_START = HEAD_WHITE.length
 const HEAD_TOTAL = GOLD_START + GOLD_TEXT.length
 
 function Headline({ start, instant, gone, onDone }) {
-  const n = useTyper({ total: HEAD_TOTAL, start, instant, msPerChar: 38, onDone })
+  const n = useTyper({ total: HEAD_TOTAL, start, instant, msPerChar: 28, onDone })
   const started = start || instant
 
   // — parte branca —
@@ -177,19 +177,19 @@ export default function Hero() {
     let begun = false
     const begin = () => { if (begun) return; begun = true; setStage((s) => Math.max(s, 1)) }
     window.addEventListener('brain:ready', begin)
-    const fallback = setTimeout(begin, 2300) // segurança caso o evento não chegue
+    const fallback = setTimeout(begin, 1600) // segurança caso o evento não chegue
     return () => { window.removeEventListener('brain:ready', begin); clearTimeout(fallback) }
   }, [])
 
   // ── sub → resto (VSL + card) ──
   useEffect(() => {
     if (stage !== 3) return
-    const t = setTimeout(() => setStage(4), 460)
+    const t = setTimeout(() => setStage(4), 320)
     return () => clearTimeout(t)
   }, [stage])
 
-  const onPreDone = () => setTimeout(() => setStage((s) => Math.max(s, 2)), 240)
-  const onHeadDone = () => setTimeout(() => setStage((s) => Math.max(s, 3)), 260)
+  const onPreDone = () => setTimeout(() => setStage((s) => Math.max(s, 2)), 140)
+  const onHeadDone = () => setTimeout(() => setStage((s) => Math.max(s, 3)), 160)
 
   // ── Parallax de scroll (camadas divergem → profundidade) ──
   useEffect(() => {
